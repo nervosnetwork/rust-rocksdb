@@ -14,6 +14,8 @@ fn get_flags_from_detect_platform_script() -> Option<Vec<String>> {
         }
         if cfg!(feature = "io-uring") {
             cmd.env("ROCKSDB_USE_IO_URING", "1");
+        } else {
+            cmd.env("ROCKSDB_USE_IO_URING", "0");
         }
 
         let output = cmd
@@ -148,6 +150,12 @@ fn build_rocksdb() {
     if let Some(flags) = get_flags_from_detect_platform_script() {
         println!("PLATFORM_CXXFLAGS: {:?}", flags);
         for flag in flags {
+            if flag == "-DROCKSDB_IOURING_PRESENT" {
+                // "-luring" not on PLATFORM_CXXFLAGS but on PLATFORM_LDFLAGS
+                // so rust binding build.rs should do it by self
+                config.flag("-luring");
+                println!("cargo:rustc-link-lib=uring");
+            }
             config.flag(&flag);
         }
     } else {
